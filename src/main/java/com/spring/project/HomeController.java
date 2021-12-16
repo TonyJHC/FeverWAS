@@ -94,35 +94,42 @@ public class HomeController {
 			}
 			return numStr;
 		}
-
+		// 사용자 인증
+		// SMS ID 와 API Key로 토큰을 발행해 사용자를 인증
+		// https://message.gabia.com/api/documentation/
 		@RequestMapping(value = "/gabia_token", method = { RequestMethod.POST, RequestMethod.GET })
 		@ResponseBody
 		public String gabia_token(HttpServletRequest request, Model model) {
 			String encode;
 			String result = null;
 			String access_token = null;
+			// 1. Http 통신을 위한 OkHttp 객체 생성 (보통 안드로이드에서 많이 사용. 가비아 서버와 비교 했을 때 해당 서버가 클라이언트가 되니까 걍 여따 한듯.)
 			OkHttpClient client = new OkHttpClient();
 
-			MediaType mediaType = MediaType.parse("application/x-www-form-urlencoded");
-			RequestBody bodyd = RequestBody.create(mediaType, "grant_type=client_credentials");
+			MediaType mediaType = MediaType.parse("application/x-www-form-urlencoded"); // jQuery의 ajax 요청시 default 포 ( 가비아에서 json형식이 아닌 해당 형식을 요구하는 듯) : https://blog.naver.com/PostView.nhn?blogId=writer0713&logNo=221853596497&redirect=Dlog&widgetTypeCall=true&directAccess=false
+			// 2. RequsetBody 생성
+			RequestBody bodyd = RequestBody.create(mediaType, "grant_type=client_credentials"); // okhttp3.RequestBody : REST API, HTTP 통신 전용 자바 라이브러리, Retrofit의 기본..?
+			// 3. POST 객체 생성
 			Request request1 = new Request.Builder()
 					.url("https://sms.gabia.com/oauth/token")
-					.post(bodyd)
+					.post(bodyd) // 인자로 넣기
 					.addHeader("Content-Type", "application/x-www-form-urlencoded")
 					.addHeader("Authorization", "Basic cGxheWNhcm5pdmFsOjgwZGQ5ZmFiYzQyNGU1MGRhM2QxMGY0MzRjY2E3OWIx")
 					.addHeader("cache-control", "no-cache")
 					.build();
 
 			try {
-				Response response1 = client.newCall(request1).execute();
+				// 4. 요청 전송
+				Response response1 = client.newCall(request1).execute(); // 비동기 처리할 시 enqueue() 메소드로 변 -> 콜백함수 등록해야됨.
 				System.out.println("response?: " + response1);
 				result = response1.body().string();
 				System.out.println(result);
+				// JSON 으로 parsing 과정
 				JSONParser parser = new JSONParser();
 				Object obj = parser.parse(result);
 				JSONObject jsonObj = (JSONObject) obj;
-				access_token = (String) jsonObj.get("access_token");
-				String message = (String) jsonObj.get("message");
+				access_token = (String) jsonObj.get("access_token"); // access_token 추출
+				String message = (String) jsonObj.get("message"); // message 추출
 				System.out.println("access토큰 : " + access_token);
 				
 				System.out.println("message : " + message);
@@ -137,7 +144,7 @@ public class HomeController {
 				byte[] encodeBytes = encoder.encode(targetBytes);
 				result = new String(encodeBytes);
 				System.out.println("result는 : " + result);
-				return result;
+				return result; // String
 				//System.out.println("result="+ result);
 				
 
@@ -152,7 +159,8 @@ public class HomeController {
 
 		}
 
-		// 가비아 인증번호 전송
+		// 단문 SMS 발송 하기
+		//
 		@RequestMapping(value = "/phonenum_authorization", method = { RequestMethod.POST, RequestMethod.GET })
 		@ResponseBody
 		public String phonenum_authorization(HttpServletRequest request, Model model, String user_phonenum, String access_token) {
@@ -164,8 +172,8 @@ public class HomeController {
 			System.out.println("인증번호 : " + identity_num + " 전화번호 : " + user_phonenum + "토큰 : " + access_token);
 			OkHttpClient client = new OkHttpClient();
 			MediaType mediaType = MediaType.parse("application/x-www-form-urlencoded");
-			RequestBody body = RequestBody.create(mediaType, "phone=" + user_phonenum + "&callback=01034582410&message="
-					+ "피버 인증번호는%20" + identity_num + "%20입니다.&refkey=RESTAPITEST1547509987");
+			RequestBody body = RequestBody.create(mediaType, "phone=" + user_phonenum + "&callback=01034582410&message=" // 발신 번호 등록 (01034582410)
+					+ "피버 인증번호는%20" + identity_num + "%20입니다.&refkey=RESTAPITEST1547509987"); // 발송 메시지
 			Request request1 = new Request.Builder()
 					.url("https://sms.gabia.com/api/send/sms")
 					.post(body)
@@ -175,6 +183,7 @@ public class HomeController {
 					.build();
 
 			try {
+				// 요청 전송
 				Response response = client.newCall(request1).execute();
 				String result = response.body().string();
 //				System.out.println("response body: " + response.body().string());
