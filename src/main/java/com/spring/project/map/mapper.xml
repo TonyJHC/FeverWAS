@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="mapper">
+	
+	<select id="selectUser" resultType = "int" parameterType="String">
+		<!-- select
+		exists(select * from playcanival.`user` where `user_name` = #{user_name}
+		AND `user_residentregistration_number` = 
+		(HEX(AES_ENCRYPT(#{user_residentregistration_number}, 'code'))) 
+		AND `user_phone` = #{user_phone}) as
+		`status`;
+		 -->
+		
+		SELECT EXISTS(SELECT * FROM playcanival.`user` WHERE `user_phone` = #{user_phone}) AS `status`;
+	</select>
+
+	<select id="selectGetUserInfo" resultType="int"
+	 parameterType="String">
+		<!-- SELECT user_idx FROM playcanival.`user` WHERE `user_name` = #{user_name}
+		AND `user_residentregistration_number` = 
+		(HEX(AES_ENCRYPT(#{user_residentregistration_number}, 'code'))) 
+		AND `user_phone` = #{user_phone}; -->
+		
+		SELECT user_idx FROM playcanival.`user` WHERE `user_phone` = #{user_phone};
+	</select>
+	
+	
+	<insert id="insertUser" parameterType = "com.spring.project.Dto.UserDTO">
+	
+		INSERT INTO playcanival.`user`(`user_name`, `user_residentregistration_number`, `user_phone`)
+		VALUES(#{user_name}, (HEX(AES_ENCRYPT(#{user_residentregistration_number}, 'code'))), #{user_phone})
+		ON DUPLICATE KEY UPDATE
+ 		user_name = #{user_name},
+ 		user_residentregistration_number = (HEX(AES_ENCRYPT(#{user_name}, 'code')));
+	
+		<!-- INSERT INTO playcanival.`user` (`user_name`, 
+		`user_residentregistration_number`, `user_phone`)
+		VALUES (#{user_name}, 
+        (HEX(AES_ENCRYPT(#{user_residentregistration_number}, 'code'))),
+        #{user_phone}); -->
+        
+        <!-- <selectKey resultType="INTEGER" keyProperty="user_idx" order="AFTER">
+			SELECT
+			LAST_INSERT_ID();
+		</selectKey> -->
+	</insert>
+	
+	<!-- 모든 구장검색 -->
+	<select id="selectStadium" resultType="com.spring.project.Dto.StatiumDTO">
+		SELECT * FROM playcanival.`stadium`;
+	</select>
+	
+	<!-- 위치로 구장검색 안쓸 -->
+	<select id="selectLocationStadium" parameterType = "com.spring.project.Dto.StatiumDTO" resultType="com.spring.project.Dto.StatiumDTO">
+		SELECT * FROM playcanival.`stadium` WHERE `stadium_latitude` = #{stadium_latitude} AND `stadium_longitute` = #{stadium_longitute};
+	</select>
+	
+	<!-- 구장검색 -->
+	<select id="searchStadium" parameterType="String" resultType="com.spring.project.Dto.StatiumDTO">
+		SELECT * FROM playcanival.`stadium` WHERE `stadium_name` LIKE CONCAT('%', #{stadium_name}, '%');
+	</select>
+	
+	
+	<!-- 유저 영상기록 -->
+	<select id="selectMyVideo" parameterType="int" resultType="com.spring.project.Dto.VideoDTO">
+		SELECT * FROM playcanival.`video` WHERE `user_user_idx` = #{user_idx};
+	</select>
+	
+	<insert id="insertVideo" parameterType="com.spring.project.Dto.VideoDTO">
+		INSERT INTO playcanival.`video` (`video_url`, `video_title`, `stadium_stadium_idx`, `user_user_idx`)
+		VALUSE (#{video_url}, #{video_title}, #{stadium_stadium_idx}, #{user_user_idx}); 
+	</insert>
+	
+	<select id="selectCoupon1" parameterType="int" resultType="com.spring.project.Dto.CouponAndHasUserDTO">
+		SELECT coupon_has_user_idx, coupon_type, coupon_has_coupon_expirationdate, coupon_has_user_createTime, coupon_has_user_updateTime
+		FROM playcanival.`coupon_has_user`
+		INNER JOIN playcanival.`coupon`
+        ON playcanival.`coupon`.coupon_idx = playcanival.`coupon_has_user`.coupon_coupon_idx
+		WHERE playcanival.`coupon_has_user`.`user_user_idx` = #{user_idx};
+	</select>
+	
+	<select id="selectCoupon2" parameterType="int" resultType="com.spring.project.Dto.CouponHasUserDTO">
+		SELECT * FROM playcanival.coupon_has_user WHERE user_user_idx = #{user_idx};
+	</select>
+	
+	<insert id="insertCouponHasUser" parameterType="com.spring.project.Dto.CouponHasUserDTO">
+		INSERT INTO playcanival.`coupon_has_user`(`coupon_coupon_idx`, `user_user_idx`, `coupon_has_coupon_expirationdate`) 
+		VALUES (#{coupon_idx}, #{user_user_idx}, #{coupon_has_coupon_expirationdate});
+	</insert>
+	
+	<insert id="insertCard" parameterType="com.spring.project.Dto.CardDTO">
+		INSERT INTO playcanival.`card` (`user_user_idx`, `card_company_name`, `card_number`)
+		VALUES (#{user_user_idx}, #{card_company_name}, #{card_number});
+	</insert>
+	
+	<select id="selectCard" parameterType="int" resultType="com.spring.project.Dto.CardDTO">
+		SELECT * FROM playcanival.`card` WHERE user_user_idx = #{user_user_idx};
+	</select>
+	
+	<select id="selectAlram" parameterType="int" resultType="com.spring.project.Dto.AlramDTO">
+		SELECT * FROM playcanival.`alram` WHERE alram_user_idx = #{user_idx};
+	</select>
+	
+	<select id="selectStadiumQR" parameterType="String" resultType="com.spring.project.Dto.StatiumDTO">
+		SELECT * FROM playcanival.`stadium` WHERE stadiumQR = #{stadiumQR};
+	</select>
+	
+	<update id="updateUserInfo" parameterType="com.spring.project.Dto.UserDTO">
+		UPDATE playcanival.`user` SET user_name = #{user_name} WHERE user_idx = #{user_idx};
+	</update>
+	
+	<select id="selectVideoAndStadium" parameterType="int" resultType="com.spring.project.Dto.VideoAndStadium">
+		SELECT * FROM playcanival.video INNER JOIN playcanival.stadium 
+		ON stadium.stadium_idx = video.stadium_stadium_idx
+		WHERE user_user_idx = #{user_idx};
+	</select>
+	
+	<insert id="insertUserHasAlram" parameterType="java.util.HashMap">
+		insert into playcanival.`user_has_alram` (user_user_idx, alram_alram_idx) VALUES(#{user_idx}, #{alram_idx});
+	</insert>
+	
+	<select id="selecHasNewAlram" resultType="Integer">
+		SELECT EXISTS( SELECT * FROM playcanival.`alram` LEFT JOIN playcanival.`user_has_alram`
+		on `alram`.alram_idx = `user_has_alram`.alram_alram_idx 
+		WHERE `alram`.alram_user_idx = #{user_idx} AND `user_has_alram`.alram_alram_idx is null) as success;
+	</select>
+	
+	<select id="selectAllAlram" resultType="com.spring.project.Dto.AlramDTO" parameterType="Integer">
+		SELECT alram.*, if(`user_has_alram`.alram_alram_idx is null, 0, 1)as checked FROM playcanival.`alram`
+		LEFT JOIN playcanival.`user_has_alram` ON `alram`.alram_idx = `user_has_alram`.alram_alram_idx
+		WHERE `alram`.alram_user_idx = #{user_idx};
+	</select>
+	
+	<insert id="insertHasAlram" parameterType="java.util.List">
+		INSERT INTO playcanival.user_has_alram(user_user_idx, alram_alram_idx) 
+		VALUES
+		<foreach collection="list" item="item" separator=",">
+			(#{item.user_user_idx}, #{item.alram_alram_idx})
+		</foreach>
+	</insert>
+
+</mapper>
